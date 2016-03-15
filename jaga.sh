@@ -3,7 +3,7 @@
 #
 #Script jagab etteantud grupile kasutamiseks uue kausta.
 #
-# V0.1
+# V0.2
 
 export LC_ALL=C
 
@@ -11,9 +11,9 @@ export LC_ALL=C
 if [ $UID -ne 0 ]
 then
   echo "käivita skript juurkasutaja õigustes"
-  exit 1
+  exit 0
 fi
- 
+
 #Kontrollib, kas on ette antud õige arv muutujaid
 if [ $# -eq 2 ]
 then
@@ -28,13 +28,20 @@ else
     SHARE=$3
   else
     echo "kasuta sktipti nii: $(basename $0) KAUST GRUPP [SHARE]"
-    exit 1
+    exit 0
   fi
+fi
+
+#Kontrollib, kas kausta muutujas on mingi imelik asi või mitte ( / või . )
+if [ $KAUST == "." ] || [ $KAUST == "/" ]
+then
+  echo "Kausta parameeter valesti sisestatud."
+  exit 0
 fi
 
 #Kontrollib, kas samba on paigaldatud (vajadusel paigaldab)
 type smbd > /dev/null 2>&1 
- 
+
 if [ $? -ne 0 ]
 then
   echo "Paigaldan samba."
@@ -43,9 +50,11 @@ fi
 
 #Kontrollib, kas kaust on olemas (vajadusel loob)
 test -d $KAUST || echo "Kausta pole. Loon kausta!" && mkdir -p $KAUST
+sleep 0.1
 
 #Kontrollib, kas grupp on olemas (vajadusel loob)
 getent group $GRUPP > /dev/null 2>&1 || echo "Gruppi pole. Loon grupi!" && addgroup $GRUPP > /dev/null 2>&1
+sleep 0.1
 
 #Kas selline share on juba olemas?
 grep $SHARE /etc/samba/smb.conf > /dev/null && echo "Selline share ($SHARE) juba on olemas!" && exit 0
@@ -53,9 +62,12 @@ grep $SHARE /etc/samba/smb.conf > /dev/null && echo "Selline share ($SHARE) juba
 #Teeb konfifailist varukoopia
 echo "Teen /etc/samba/smb.conf failist varukoopia"
 cp /etc/samba/smb.conf /etc/samba/smb.conf.old
+sleep 0.1
 
-#Uus rida konfifaili
-cat >> /etc/samba/smb.conf <<EOF
+#Uus rida testkonfifaili
+echo "Lisan read testkonfifaili"
+sleep 0.1
+cat >> /etc/samba/smb.conf.test <<EOF
 
 [$SHARE]
  path=$KAUST
@@ -66,10 +78,24 @@ cat >> /etc/samba/smb.conf <<EOF
  create mask=0664
  directory mask=0775
 EOF
+
+#Testi, kas conf on okei
+testparm -s /etc/samba/smb.conf.test > /dev/null 2>&1
+if [ $? -eq 0 ]
+  then
+    echo "Conf OK!"
+  else
+    echo "Conf ERROR!"
+    exit 0
+fi
+sleep 0.1
+
+#Testfail live keskkonda
+cp /etc/samba/smb.conf.test /etc/samba/smb.conf
 echo "Read konfifaili lisatud."
+sleep 0.1
 
 #Reload sambale
 echo "Teen sambale reloadi."
-/etc/init.d/smbd reload || echo "Reloadi ei toimunud, midagi läks valesti." && exit 1
-
-echo "All Done!"
+sleep 0.1
+/etc/init.d/smbd reload > /dev/null 2>&1 || echo "Reloadi ei toimunud, midagi läks valesti." && exit 0
