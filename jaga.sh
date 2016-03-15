@@ -3,7 +3,7 @@
 #
 #Script jagab etteantud grupile kasutamiseks uue kausta.
 #
-# V0.2.1
+# V0.2.2
 
 export LC_ALL=C
 
@@ -32,7 +32,7 @@ else
   fi
 fi
 
-#Kontrollib, kas kausta muutujas on mingi imelik asi või mitte ( / või . )
+#Kontrollib, kas kausta muutujas on ainsaks märgiks / või .
 if [ $KAUST == "." ] || [ $KAUST == "/" ]
 then
   echo "Kausta parameeter valesti sisestatud."
@@ -49,8 +49,13 @@ then
 fi
 
 #Kontrollib, kas kaust (või fail?) on olemas (vajadusel loob)
-test -e $KAUST && echo "See on fail, mitte kaust!" && exit 1
 test -d $KAUST || echo "Kausta pole. Loon kausta!" && mkdir -p $KAUST
+
+if [ $? -ne 0 ]
+then
+  echo "Sellenimeline fail on juba olemas. Ei saa kausta luua." && exit 1
+fi
+
 sleep 0.1
 
 #Kontrollib, kas grupp on olemas (vajadusel loob)
