@@ -1,0 +1,2 @@
+/index.html,itcollege
+/kama/index.html,Siin ei ole kama
